@@ -5,7 +5,7 @@ on:
   schedule:
     # Every 5 minutes. GitHub does not guarantee exact timing - during
     # busy periods it can run a few minutes late, which is fine here.
-    - cron: "*/5 * * * *"
+     - cron: "*/5 * * * *"
   workflow_dispatch: {}  # lets you also trigger it manually from the Actions tab
 
 permissions:
