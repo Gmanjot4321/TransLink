@@ -1,0 +1,39 @@
+name: Poll TransLink feed
+
+on:
+  schedule:
+    # Every 5 minutes. GitHub does not guarantee exact timing - during
+    # busy periods it can run a few minutes late, which is fine here.
+    - cron: "*/5 * * * *"
+  workflow_dispatch: {}  # lets you also trigger it manually from the Actions tab
+
+permissions:
+  contents: write  # needed so the workflow can commit the updated .db file back
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Poll feed and store snapshot
+        env:
+          TRANSLINK_API_KEY: ${{ secrets.TRANSLINK_API_KEY }}
+        run: python poll_once.py
+
+      - name: Commit and push updated database
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add translink_reliability.db
+          git diff --quiet --cached || git commit -m "Add polling snapshot"
+          git push
