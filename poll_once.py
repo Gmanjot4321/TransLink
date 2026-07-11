@@ -23,7 +23,8 @@ TRIP_UPDATES_URL = f"https://gtfsapi.translink.ca/v3/gtfsrealtime?apikey={API_KE
 DB_PATH = "translink_reliability.db"
 
 TRACKED_ROUTES = {
-    "6705": "321/351",
+    "6705": "321 Surrey Central/WhiteRock",  "6715":"351 Bridgeport/WhiteRock",
+    "18705":"531 WhiteRock/WillowBrook" ,"11692":"364 Langley Centre/Scottsdale"
 }
 
 
