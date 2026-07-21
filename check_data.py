@@ -1,37 +1,43 @@
 """
-TransLink Reliability Tracker - quick sanity check
+TransLink Reliability Tracker - sanity check (multi-file CSV version)
 
-Run this any time while collect_data.py is running (or after) to confirm
-rows are actually being stored, and get a first peek at the data.
+Reads every snapshots_YYYY-MM-DD.csv file in the current folder and
+gives a combined summary, since data is now rotated into one file
+per day instead of a single ever-growing file.
 
 Usage:
     python check_data.py
 """
 
-import sqlite3
+import csv
+import glob
+from collections import Counter
 
-DB_PATH = "translink_reliability.db"
+files = sorted(glob.glob("snapshots_*.csv"))
 
-conn = sqlite3.connect(DB_PATH)
+if not files:
+    print("No snapshots_*.csv files found in this folder.")
+    raise SystemExit
+
+all_rows = []
+for path in files:
+    with open(path, newline="", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+        all_rows.extend(rows)
+        print(f"{path}: {len(rows)} rows")
+
+print(f"\nTotal rows across {len(files)} file(s): {len(all_rows)}\n")
 
 print("Row count per route:")
-for route_id, label, count in conn.execute("""
-    SELECT route_id, route_label, COUNT(*)
-    FROM snapshots
-    GROUP BY route_id
-"""):
+counts = Counter(row["route_id"] for row in all_rows)
+for route_id, count in counts.items():
+    label = next((r["route_label"] for r in all_rows if r["route_id"] == route_id), "")
     print(f"  route_id={route_id} ({label}): {count} rows")
 
-print("\nMost recent 10 rows:")
-for row in conn.execute("""
-    SELECT captured_at, route_id, stop_id, delay_seconds
-    FROM snapshots
-    ORDER BY captured_at DESC
-    LIMIT 10
-"""):
-    print(" ", row)
+if all_rows:
+    print("\nMost recent 10 rows:")
+    for row in all_rows[-10:]:
+        print(" ", row["captured_at"], row["route_id"], row["stop_id"], row["delay_seconds"])
 
-print("\nEarliest and latest capture time:")
-print(conn.execute("SELECT MIN(captured_at), MAX(captured_at) FROM snapshots").fetchone())
-
-conn.close()
+    print("\nEarliest and latest capture time:")
+    print(all_rows[0]["captured_at"], "->", all_rows[-1]["captured_at"])
