@@ -17,15 +17,23 @@ from google.transit import gtfs_realtime_pb2
 API_KEY = os.environ["TRANSLINK_API_KEY"]
 TRIP_UPDATES_URL = f"https://gtfsapi.translink.ca/v3/gtfsrealtime?apikey={API_KEY}"
 
-CSV_PATH = "snapshots.csv"
 CSV_HEADER = [
     "captured_at", "feed_timestamp", "route_id", "route_label",
     "trip_id", "stop_id", "stop_sequence", "delay_seconds"
 ]
 
+def get_csv_path():
+    """One file per UTC day, so no single file ever grows unbounded."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    return f"snapshots_{today}.csv"
+
+# Update this with your 4 tracked routes (route_id -> label).
 TRACKED_ROUTES = {
-   "6705": "321 Surrey Central/WhiteRock",  "6715":"351 Bridgeport/WhiteRock",
-    "18705":"531 WhiteRock/WillowBrook" ,"11692":"364 Langley Centre/Scottsdale"
+    "6705": "321/351",
+    # add your other 3 routes here, e.g.:
+    # "XXXX": "route_number_2",
+    # "YYYY": "route_number_3",
+    # "ZZZZ": "route_number_4",
 }
 
 
@@ -43,10 +51,11 @@ def poll_and_store():
 
     feed = fetch_feed()
 
-    file_exists = os.path.exists(CSV_PATH)
+    csv_path = get_csv_path()
+    file_exists = os.path.exists(csv_path)
     rows_written = 0
 
-    with open(CSV_PATH, "a", newline="", encoding="utf-8") as f:
+    with open(csv_path, "a", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         if not file_exists:
             writer.writerow(CSV_HEADER)
@@ -85,7 +94,7 @@ def poll_and_store():
                 ])
                 rows_written += 1
 
-    print(f"Appended {rows_written} rows.")
+    print(f"Appended {rows_written} rows to {csv_path}.")
 
 
 if __name__ == "__main__":
