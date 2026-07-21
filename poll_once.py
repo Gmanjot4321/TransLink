@@ -1,10 +1,9 @@
 """
-TransLink Reliability Tracker - Phase 2 (CSV version)
+TransLink Reliability Tracker - Phase 2 (CSV version, daily rotation)
 
-Appends new rows to snapshots.csv instead of writing to a SQLite
-database file. Git compresses growing text files efficiently via
-line-based diffs, so this avoids the Git LFS storage blowup that
-happens when committing a large, ever-changing binary .db file.
+Appends new rows to a per-day CSV file (snapshots_YYYY-MM-DD.csv)
+instead of one ever-growing file, so no single file ever approaches
+GitHub's 100MB file size limit.
 """
 
 import csv
@@ -22,18 +21,18 @@ CSV_HEADER = [
     "trip_id", "stop_id", "stop_sequence", "delay_seconds"
 ]
 
+
 def get_csv_path():
     """One file per UTC day, so no single file ever grows unbounded."""
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     return f"snapshots_{today}.csv"
 
-# Update this with your 4 tracked routes (route_id -> label).
+
 TRACKED_ROUTES = {
-    "6705": "321/351",
-    # add your other 3 routes here, e.g.:
-    # "XXXX": "route_number_2",
-    # "YYYY": "route_number_3",
-    # "ZZZZ": "route_number_4",
+    "6705": "321 Surrey Central/WhiteRock",
+    "6715": "351 Bridgeport/WhiteRock",
+    "18705": "531 WhiteRock/WillowBrook",
+    "11692": "364 Langley Centre/Scottsdale",
 }
 
 
