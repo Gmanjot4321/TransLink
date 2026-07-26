@@ -28,6 +28,11 @@ for path in files:
 
 print(f"\nTotal rows across {len(files)} file(s): {len(all_rows)}\n")
 
+# Sort by actual timestamp, not filename order - filenames like
+# "snapshots_full_backup.csv" don't sort chronologically next to
+# dated files like "snapshots_2026-07-21.csv".
+all_rows.sort(key=lambda r: r["captured_at"])
+
 print("Row count per route:")
 counts = Counter(row["route_id"] for row in all_rows)
 for route_id, count in counts.items():
