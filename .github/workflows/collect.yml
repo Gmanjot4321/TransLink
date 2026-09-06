@@ -3,9 +3,6 @@ name: Poll TransLink feed
 on:
   workflow_dispatch: {}
 
-permissions:
-  contents: write  # needed so the workflow can commit the updated .db file back
-
 jobs:
   poll:
     runs-on: ubuntu-latest
@@ -24,13 +21,6 @@ jobs:
       - name: Poll feed and store snapshot
         env:
           TRANSLINK_API_KEY: ${{ secrets.TRANSLINK_API_KEY }}
+          TURSO_DATABASE_URL: ${{ secrets.TURSO_DATABASE_URL }}
+          TURSO_AUTH_TOKEN: ${{ secrets.TURSO_AUTH_TOKEN }}
         run: python poll_once.py
-
-      - name: Commit and push updated CSV
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add snapshots_*.csv
-          git diff --quiet --cached || git commit -m "Add polling snapshot"
-          git pull --rebase origin main
-          git push
