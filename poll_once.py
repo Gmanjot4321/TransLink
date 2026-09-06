@@ -77,7 +77,12 @@ def poll_and_store():
     trip_feed = fetch_feed(TRIP_UPDATES_URL)
     position_feed = fetch_feed(VEHICLE_POSITIONS_URL)
 
-    client = libsql_client.create_client_sync(url=TURSO_URL, auth_token=TURSO_TOKEN)
+       # libsql-client's default WebSocket (Hrana) transport has known
+    # handshake compatibility issues with Turso from some environments.
+    # Forcing HTTP transport (by using https:// instead of libsql://)
+    # is the standard, more reliable workaround.
+    http_url = TURSO_URL.replace("libsql://", "https://")
+    client = libsql_client.create_client_sync(url=http_url, auth_token=TURSO_TOKEN)
     init_db(client)
 
     batch = []
