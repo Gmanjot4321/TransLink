@@ -97,36 +97,39 @@ def poll_and_store():
             continue  # skip SkyTrain/SeaBus/untracked routes
 
         route_label = BUS_ROUTES[route_id]
+        # Only take the NEXT stop for this trip, not every stop still
+        # ahead on the route - cuts write volume roughly 10-15x.
+        if len(tu.stop_time_update) == 0:
+            continue
+        stu = tu.stop_time_update[0]
 
-        for stu in tu.stop_time_update:
-            delay_sec = None
-            if stu.HasField("arrival") and stu.arrival.HasField("delay"):
-                delay_sec = stu.arrival.delay
-            elif stu.HasField("departure") and stu.departure.HasField("delay"):
-                delay_sec = stu.departure.delay
+        delay_sec = None
+        if stu.HasField("arrival") and stu.arrival.HasField("delay"):
+            delay_sec = stu.arrival.delay
+        elif stu.HasField("departure") and stu.departure.HasField("delay"):
+            delay_sec = stu.departure.delay
 
-            if delay_sec is None:
-                continue
+        if delay_sec is None:
+            continue
 
-            batch.append(libsql_client.Statement(
-                """
-                INSERT INTO snapshots
-                    (captured_at, feed_timestamp, route_id, route_label,
-                     trip_id, stop_id, stop_sequence, delay_seconds)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    captured_at,
-                    trip_feed.header.timestamp,
-                    route_id,
-                    route_label,
-                    tu.trip.trip_id,
-                    stu.stop_id,
-                    stu.stop_sequence,
-                    delay_sec,
-                ],
-            ))
-
+        batch.append(libsql_client.Statement(
+            """
+            INSERT INTO snapshots
+                (captured_at, feed_timestamp, route_id, route_label,
+                 trip_id, stop_id, stop_sequence, delay_seconds)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                captured_at,
+                trip_feed.header.timestamp,
+                route_id,
+                route_label,
+                tu.trip.trip_id,
+                stu.stop_id,
+                stu.stop_sequence,
+                delay_sec,
+            ],
+        ))
     position_batch = []
     for entity in position_feed.entity:
         if not entity.HasField("vehicle"):
